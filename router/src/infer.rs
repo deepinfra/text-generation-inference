@@ -506,6 +506,8 @@ fn send_responses(
 
     let mut stopped = false;
 
+    tracing::info!("send_responses for generation: {generation:?}");
+
     if let Some(prefill_tokens) = generation.prefill_tokens {
         // Send message
         entry.response_tx.send_timeout(
