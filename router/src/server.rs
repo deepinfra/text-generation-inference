@@ -386,6 +386,8 @@ async fn generate_stream(
                                     // Prefill is ignored
                                     InferStreamResponse::Prefill(prefill_tokens) => {
 
+                                        tracing::info!(parent: &span, "Prefil");
+
                                         let details = StreamDetails {
                                             finish_reason: None,
                                             generated_tokens: 0,
