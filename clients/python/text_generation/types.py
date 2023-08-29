@@ -208,9 +208,11 @@ class Response(BaseModel):
 # `generate_stream` details
 class StreamDetails(BaseModel):
     # Generation finish reason
-    finish_reason: FinishReason
+    finish_reason: Optional[FinishReason]
     # Number of generated tokens
     generated_tokens: int
+    # Number of input tokens
+    input_tokens: int
     # Sampling seed if sampling was activated
     seed: Optional[int]
 
@@ -218,7 +220,7 @@ class StreamDetails(BaseModel):
 # `generate_stream` return value
 class StreamResponse(BaseModel):
     # Generated token
-    token: Token
+    token: Optional[Token]
     # Complete generated text
     # Only available when the generation is finished
     generated_text: Optional[str]

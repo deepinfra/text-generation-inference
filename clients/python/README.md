@@ -228,7 +228,7 @@ class StreamDetails:
 # `generate_stream` return value
 class StreamResponse:
     # Generated token
-    token: Token
+    token: Optional[Token]
     # Complete generated text
     # Only available when the generation is finished
     generated_text: Optional[str]
