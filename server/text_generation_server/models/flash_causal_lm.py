@@ -952,6 +952,9 @@ class FlashCausalLM(Model):
             next_token_id,
             next_token_logprob,
         ) in enumerate(iterator):
+
+            print("input_length %s %s" % (i, input_length), file=sys.stderr)
+
             # Append next token to all tokens
             all_input_ids.append(next_token_id)
 
@@ -989,7 +992,8 @@ class FlashCausalLM(Model):
                     generated_text = None
 
                 # Prefill
-                if prefill and request.prefill_logprobs:
+                # if prefill and (request.prefill_logprobs or request.prefill_details):
+                if prefill and (request.prefill_logprobs or True):
                     out_start_index = batch.prefill_cu_outlens[i]
                     out_end_index = batch.prefill_cu_outlens[i + 1]
 
