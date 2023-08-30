@@ -871,8 +871,7 @@ class FlashCausalLM(Model):
             input_length,
             all_input_ids,
         ) in enumerate(iterator):
-            print("input_length %s %s" % (i, input_length))
-            assert False, "input_length %s %s" % (i, input_length)
+            print("input_length %s %s" % (i, input_length), file=sys.stderr)
 
             # Indexing metadata
             start_index = cumulative_length
