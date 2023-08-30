@@ -379,6 +379,7 @@ async fn generate_stream(
                 // Keep permit as long as generate_stream lives
                 Ok((_permit, mut response_stream)) => {
                     // Server-Sent Event stream
+                    let mut number_input_tokens = 0;
                     while let Some(response) = response_stream.next().await {
                         match response {
                             Ok(response) => {
@@ -387,21 +388,23 @@ async fn generate_stream(
                                     InferStreamResponse::Prefill(prefill_tokens) => {
 
                                         tracing::info!(parent: &span, "Prefil");
+                                        //
+                                        // let details = StreamDetails {
+                                        //     finish_reason: None,
+                                        //     generated_tokens: 0,
+                                        //     input_tokens: prefill_tokens.ids.len() as u32,
+                                        //     seed: None,
+                                        // };
+                                        //
+                                        number_input_tokens = refill_tokens.ids.len() as u32,
 
-                                        let details = StreamDetails {
-                                            finish_reason: None,
-                                            generated_tokens: 0,
-                                            input_tokens: prefill_tokens.ids.len() as u32,
-                                            seed: None,
-                                        };
-
-                                        let stream_response = StreamResponse {
-                                            token: None,
-                                            generated_text: None,
-                                            details: Some(details)
-                                        };
-
-                                        yield Ok(Event::default().json_data(stream_response).unwrap())
+                                        // let stream_response = StreamResponse {
+                                        //     token: None,
+                                        //     generated_text: None,
+                                        //     details: Some(details)
+                                        // };
+                                        //
+                                        // yield Ok(Event::default().json_data(stream_response).unwrap())
                                     }
                                     // Yield event for every new token
                                     InferStreamResponse::Token(token) => {
@@ -428,7 +431,7 @@ async fn generate_stream(
                                             true => Some(StreamDetails {
                                                 finish_reason: Some(FinishReason::from(generated_text.finish_reason)),
                                                 generated_tokens: generated_text.generated_tokens,
-                                                input_tokens: 0,
+                                                input_tokens: number_input_tokens,
                                                 seed: generated_text.seed,
                                             }),
                                             false => None,
