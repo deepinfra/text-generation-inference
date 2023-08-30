@@ -2,6 +2,7 @@ import math
 import itertools
 import torch
 import torch.distributed
+import sys
 
 import numpy as np
 
@@ -871,6 +872,7 @@ class FlashCausalLM(Model):
             input_length,
             all_input_ids,
         ) in enumerate(iterator):
+
             print("input_length %s %s" % (i, input_length), file=sys.stderr)
 
             # Indexing metadata

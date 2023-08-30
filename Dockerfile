@@ -182,13 +182,16 @@ COPY --from=vllm-builder /usr/src/vllm/build/lib.linux-x86_64-cpython-39 /opt/co
 RUN pip install einops --no-cache-dir
 
 # Install server
+COPY server/requirements.txt server/requirements.txt
+RUN cd server && \
+    pip install -r requirements.txt && \
+    pip install ".[bnb, accelerate, quantize]" --no-cache-dir
+
 COPY proto proto
 COPY server server
 COPY server/Makefile server/Makefile
 RUN cd server && \
-    make gen-server && \
-    pip install -r requirements.txt && \
-    pip install ".[bnb, accelerate, quantize]" --no-cache-dir
+    make gen-server
 
 # Install benchmarker
 COPY --from=builder /usr/src/target/release/text-generation-benchmark /usr/local/bin/text-generation-benchmark
