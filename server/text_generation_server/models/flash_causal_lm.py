@@ -992,15 +992,18 @@ class FlashCausalLM(Model):
                     generated_text = None
 
                 # Prefill
-                # if prefill and (request.prefill_logprobs or request.prefill_details):
-                if prefill and (request.prefill_logprobs or True):
+                if prefill:
                     out_start_index = batch.prefill_cu_outlens[i]
                     out_end_index = batch.prefill_cu_outlens[i + 1]
 
-                    # Remove generated token to only have prefill and add nan for first prompt token
-                    request_prefill_logprobs = [float("nan")] + prefill_logprobs[
-                        out_start_index : out_end_index - 1
-                    ]
+                    if request.prefill_logprobs:
+                        # Remove generated token to only have prefill and add nan for first prompt token
+                        request_prefill_logprobs = [float("nan")] + prefill_logprobs[
+                            out_start_index : out_end_index - 1
+                        ]
+                    else:
+                        request_prefill_logprobs = []
+
                     prefill_token_ids = all_input_ids[:-1]
                     prefill_texts = self.tokenizer.batch_decode(
                         prefill_token_ids,
