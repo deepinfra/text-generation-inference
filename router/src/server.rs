@@ -191,6 +191,7 @@ async fn generate(
                                 response.generated_text.finish_reason,
                             ),
                             generated_tokens: response.generated_text.generated_tokens,
+                            input_tokens: response.input_tokens,
                             prefill: response.prefill,
                             tokens: response.tokens,
                             seed: response.generated_text.seed,
@@ -202,6 +203,7 @@ async fn generate(
             Some(Details {
                 finish_reason: FinishReason::from(response.generated_text.finish_reason),
                 generated_tokens: response.generated_text.generated_tokens,
+                input_tokens: response.input_tokens,
                 prefill: response.prefill,
                 tokens: response.tokens,
                 seed: response.generated_text.seed,
