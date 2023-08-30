@@ -192,7 +192,7 @@ COPY proto proto
 COPY server server
 COPY server/Makefile server/Makefile
 RUN cd server && \
-    make gen-server &&
+    make gen-server && \
     pip install ".[bnb, accelerate, quantize]" --no-cache-dir
 
 # Install benchmarker
