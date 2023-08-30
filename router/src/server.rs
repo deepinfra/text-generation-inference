@@ -396,7 +396,7 @@ async fn generate_stream(
                                         //     seed: None,
                                         // };
                                         //
-                                        number_input_tokens = refill_tokens.ids.len() as u32,
+                                        number_input_tokens = prefill_tokens.ids.len() as u32;
 
                                         // let stream_response = StreamResponse {
                                         //     token: None,
