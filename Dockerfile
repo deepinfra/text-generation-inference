@@ -186,7 +186,7 @@ COPY server/requirements.txt server/requirements.txt
 COPY server/pyproject.toml server/pyproject.toml
 COPY server/poetry.lock server/poetry.lock
 RUN cd server && \
-    pip install -r requirements.txt && \
+    pip install -r requirements.txt
 
 COPY proto proto
 COPY server server
