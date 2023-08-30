@@ -352,6 +352,7 @@ async fn generate_stream(
         compute_characters.to_string().parse().unwrap(),
     );
     headers.insert("X-Accel-Buffering", "no".parse().unwrap());
+
     let stream = async_stream::stream! {
         // Inference
         let mut end_reached = false;
@@ -384,27 +385,9 @@ async fn generate_stream(
                         match response {
                             Ok(response) => {
                                 match response {
-                                    // Prefill is ignored
+                                    // Prefill is only used for initial num input tokens
                                     InferStreamResponse::Prefill(prefill_tokens) => {
-
-                                        tracing::info!(parent: &span, "Prefil");
-                                        //
-                                        // let details = StreamDetails {
-                                        //     finish_reason: None,
-                                        //     generated_tokens: 0,
-                                        //     input_tokens: prefill_tokens.ids.len() as u32,
-                                        //     seed: None,
-                                        // };
-                                        //
                                         number_input_tokens = prefill_tokens.ids.len() as u32;
-
-                                        // let stream_response = StreamResponse {
-                                        //     token: None,
-                                        //     generated_text: None,
-                                        //     details: Some(details)
-                                        // };
-                                        //
-                                        // yield Ok(Event::default().json_data(stream_response).unwrap())
                                     }
                                     // Yield event for every new token
                                     InferStreamResponse::Token(token) => {
@@ -412,7 +395,7 @@ async fn generate_stream(
 
                                         // StreamResponse
                                         let stream_token = StreamResponse {
-                                            token: Some(token),
+                                            token,
                                             generated_text: None,
                                             details: None,
                                         };
@@ -429,7 +412,7 @@ async fn generate_stream(
                                         // Token details
                                         let details = match details {
                                             true => Some(StreamDetails {
-                                                finish_reason: Some(FinishReason::from(generated_text.finish_reason)),
+                                                finish_reason: FinishReason::from(generated_text.finish_reason),
                                                 generated_tokens: generated_text.generated_tokens,
                                                 input_tokens: number_input_tokens,
                                                 seed: generated_text.seed,
@@ -473,7 +456,7 @@ async fn generate_stream(
                                         tracing::info!(parent: &span, "Success");
 
                                         let stream_token = StreamResponse {
-                                            token: Some(token),
+                                            token,
                                             generated_text: Some(output_text),
                                             details
                                         };
@@ -508,7 +491,6 @@ async fn generate_stream(
             }
         }
     };
-
 
     (headers, Sse::new(stream).keep_alive(KeepAlive::default()))
 }

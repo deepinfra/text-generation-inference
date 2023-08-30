@@ -257,7 +257,6 @@ async fn batching_task(
     loop {
         // Wait for a notification from the Infer struct
         shared.batching_task.notified().await;
-        tracing::info!("batching loop");
 
         // Get the next batch from the queue
         // This batch might be smaller than the maximum batch size if there are not enough requests
@@ -364,7 +363,6 @@ async fn prefill(
     let start_time = Instant::now();
     let batch_id = batch.id;
     metrics::increment_counter!("tgi_batch_inference_count", "method" => "prefill");
-    tracing::info!("prefill");
 
     match client.prefill(batch).await {
         Ok((generations, next_batch)) => {
@@ -505,8 +503,6 @@ fn send_responses(
     }
 
     let mut stopped = false;
-
-    tracing::info!("send_responses for generation: {generation:?}");
 
     if let Some(prefill_tokens) = generation.prefill_tokens {
         // Send message

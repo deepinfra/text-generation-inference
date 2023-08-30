@@ -231,6 +231,8 @@ pub(crate) struct BestOfSequence {
     pub finish_reason: FinishReason,
     #[schema(example = 1)]
     pub generated_tokens: u32,
+    #[schema(example = 100)]
+    pub input_tokens: u32,
     #[schema(nullable = true, example = 42)]
     pub seed: Option<u64>,
     pub prefill: Vec<PrefillToken>,
@@ -243,6 +245,8 @@ pub(crate) struct Details {
     pub finish_reason: FinishReason,
     #[schema(example = 1)]
     pub generated_tokens: u32,
+    #[schema(example = 100)]
+    pub input_tokens: u32,
     #[schema(nullable = true, example = 42)]
     pub seed: Option<u64>,
     pub prefill: Vec<PrefillToken>,
@@ -261,8 +265,8 @@ pub(crate) struct GenerateResponse {
 
 #[derive(Serialize, ToSchema)]
 pub(crate) struct StreamDetails {
-    #[schema(nullable = true, example = "length")]
-    pub finish_reason: Option<FinishReason>,
+    #[schema(example = "length")]
+    pub finish_reason: FinishReason,
     #[schema(example = 1)]
     pub generated_tokens: u32,
     #[schema(example = 100)]
@@ -273,8 +277,7 @@ pub(crate) struct StreamDetails {
 
 #[derive(Serialize, ToSchema)]
 pub(crate) struct StreamResponse {
-    #[schema(nullable = true)]
-    pub token: Option<Token>,
+    pub token: Token,
     #[schema(nullable = true, default = "null", example = "test")]
     pub generated_text: Option<String>,
     #[schema(nullable = true, default = "null")]
