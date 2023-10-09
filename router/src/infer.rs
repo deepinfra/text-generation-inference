@@ -474,6 +474,7 @@ async fn filter_batch(
 fn filter_send_generations(generations: Vec<Generation>, entries: &mut IntMap<u64, Entry>) {
     generations.into_iter().for_each(|generation| {
         let id = generation.request_id;
+        let foo = 1 + 2;
         // Get entry
         // We can `expect` here as the request id should always be in the entries
         let entry = entries
