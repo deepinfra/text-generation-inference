@@ -110,6 +110,10 @@ class CacheManager:
             # Reset mask
             self.free_block_mask[block_indices] = 1
 
+    def usage(self) -> float:
+        free_block_indices = self.free_block_mask.nonzero()
+        return len(free_block_indices) / self.num_blocks
+
 
 @dataclass
 class FlashCausalLMBatch(Batch):
@@ -171,12 +175,16 @@ class FlashCausalLMBatch(Batch):
     # Maximum number of blocks
     max_blocks: int
 
+    #kv cache usage
+    kv_cache_usage: float = 0
+
     def to_pb(self) -> generate_pb2.CachedBatch:
         return generate_pb2.CachedBatch(
             id=self.batch_id,
             request_ids=[r.id for r in self.requests],
             size=len(self),
             max_tokens=self.blocks * BLOCK_SIZE,
+            kv_cache_usage=self.kv_cache_usage
         )
 
     @classmethod
@@ -1036,5 +1044,8 @@ class FlashCausalLM(Model):
         batch.prefill_head_indices = None
         batch.prefill_next_token_indices = None
         batch.max_seqlen = batch.max_seqlen + 1
+
+        batch.kv_cache_usage = CACHE_MANAGER.usage()
+        print("kv cache %.2f%%" % (CACHE_MANAGER.usage() * 100))
 
         return generations, batch
