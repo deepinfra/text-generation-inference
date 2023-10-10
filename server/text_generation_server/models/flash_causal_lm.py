@@ -110,9 +110,10 @@ class CacheManager:
             # Reset mask
             self.free_block_mask[block_indices] = 1
 
+    # return how much of the cache is used between 0 and 1
     def usage(self) -> float:
         free_block_indices = self.free_block_mask.nonzero()
-        return len(free_block_indices) / self.num_blocks
+        return (self.num_blocks - len(free_block_indices)) / self.num_blocks
 
 
 @dataclass
