@@ -113,6 +113,8 @@ message CachedBatch {
     uint32 size = 3;
     /// Maximum number of tokens this batch will grow to
     uint32 max_tokens = 4;
+    /// kv-cache usage
+    float kv_cache_usage = 5;
 }
 
 enum FinishReason {
