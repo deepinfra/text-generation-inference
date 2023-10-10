@@ -11,7 +11,7 @@ impl ServerStats {
 
     pub(crate) fn log_stats(&self) {
         // log kv_cache_usage with precision of 2
-        tracing::info!("KV cache usage: {:.2}%", self.kv_cache_usage);
+        tracing::info!("KV cache usage: {:.2}%", self.kv_cache_usage * 100.0);
         // tracing::info!("KV cache usage: {.2}%", self.kv_cache_usage);
     }
 

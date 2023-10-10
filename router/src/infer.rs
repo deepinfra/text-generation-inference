@@ -282,15 +282,12 @@ async fn batching_task(
                 let batch_max_tokens = batch.max_tokens;
                 let kv_cache_usage = batch.kv_cache_usage;
                 stats.write().unwrap().update_kv_cache_usage(kv_cache_usage);
-                // stats.deref_mut().update_kv_cache_usage(kv_cache_usage);
-                // stats.update_kv_cache_usage(kv_cache_usage);
 
                 let mut batches = vec![batch];
 
                 metrics::gauge!("tgi_batch_current_size", batch_size as f64);
                 metrics::gauge!("tgi_batch_current_max_tokens", batch_max_tokens as f64);
                 metrics::gauge!("tgi_kv_cache_usage", kv_cache_usage as f64);
-                tracing::debug!("KV cache usage: {}", kv_cache_usage);
 
                 let min_size = if waiting_tokens >= max_waiting_tokens {
                     // If we didn't onboard any new requests since >= max_waiting_tokens, we try
