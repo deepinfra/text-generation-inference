@@ -290,7 +290,7 @@ async fn batching_task(
                 metrics::gauge!("tgi_batch_current_size", batch_size as f64);
                 metrics::gauge!("tgi_batch_current_max_tokens", batch_max_tokens as f64);
                 metrics::gauge!("tgi_kv_cache_usage", kv_cache_usage as f64);
-                tracing::info!("KV cache usage: {}", kv_cache_usage);
+                tracing::debug!("KV cache usage: {}", kv_cache_usage);
 
                 let min_size = if waiting_tokens >= max_waiting_tokens {
                     // If we didn't onboard any new requests since >= max_waiting_tokens, we try
@@ -303,7 +303,7 @@ async fn batching_task(
 
                 let token_budget = max_batch_total_tokens.saturating_sub(batch_max_tokens);
 
-                tracing::info!("next_batch: min_size:{:?} max_batch_prefill_tokens:{} token_budget:{}",
+                tracing::debug!("next_batch: min_size:{:?} max_batch_prefill_tokens:{} token_budget:{}",
                     min_size, max_batch_prefill_tokens, token_budget);
                 // Try to get a new batch
                 if let Some((mut new_entries, new_batch, span)) = queue
