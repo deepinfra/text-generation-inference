@@ -7,10 +7,7 @@ use flume::SendTimeoutError;
 use futures::future::try_join_all;
 use futures::stream::StreamExt;
 use nohash_hasher::IntMap;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc, RwLock};
 use std::time::Duration;
 use text_generation_client::{
     Batch, CachedBatch, ClientError, GeneratedText, Generation, PrefillTokens, ShardedClient,
@@ -19,6 +16,7 @@ use thiserror::Error;
 use tokio::sync::{Notify, OwnedSemaphorePermit, Semaphore, TryAcquireError};
 use tokio::time::Instant;
 use tracing::{info_span, instrument, Instrument, Span};
+use crate::stats::ServerStats;
 
 /// Inference struct
 #[derive(Clone)]
@@ -51,6 +49,7 @@ impl Infer {
         max_concurrent_requests: usize,
         requires_padding: bool,
         generation_health: Arc<AtomicBool>,
+        stats: Arc<RwLock<ServerStats>>,
     ) -> Self {
         // Infer shared state
         let queue = Queue::new(requires_padding, 16);
@@ -68,6 +67,7 @@ impl Infer {
             queue.clone(),
             shared.clone(),
             generation_health,
+            stats,
         ));
 
         // Inference limit with a semaphore
@@ -255,6 +255,7 @@ async fn batching_task(
     queue: Queue,
     shared: Arc<Shared>,
     generation_health: Arc<AtomicBool>,
+    stats: Arc<RwLock<ServerStats>>,
 ) {
     // Infinite loop
     loop {
@@ -280,6 +281,10 @@ async fn batching_task(
                 let batch_size = batch.size;
                 let batch_max_tokens = batch.max_tokens;
                 let kv_cache_usage = batch.kv_cache_usage;
+                stats.write().unwrap().update_kv_cache_usage(kv_cache_usage);
+                // stats.deref_mut().update_kv_cache_usage(kv_cache_usage);
+                // stats.update_kv_cache_usage(kv_cache_usage);
+
                 let mut batches = vec![batch];
 
                 metrics::gauge!("tgi_batch_current_size", batch_size as f64);
@@ -298,11 +303,14 @@ async fn batching_task(
 
                 let token_budget = max_batch_total_tokens.saturating_sub(batch_max_tokens);
 
+                tracing::info!("next_batch: min_size:{:?} max_batch_prefill_tokens:{} token_budget:{}",
+                    min_size, max_batch_prefill_tokens, token_budget);
                 // Try to get a new batch
                 if let Some((mut new_entries, new_batch, span)) = queue
                     .next_batch(min_size, max_batch_prefill_tokens, token_budget)
                     .await
                 {
+                    tracing::info!("next_batch: new_batch_size:{}", new_batch.size);
                     // Tracking metrics
                     if min_size.is_some() {
                         metrics::increment_counter!("tgi_batch_concat", "reason" => "backpressure");
@@ -474,7 +482,6 @@ async fn filter_batch(
 fn filter_send_generations(generations: Vec<Generation>, entries: &mut IntMap<u64, Entry>) {
     generations.into_iter().for_each(|generation| {
         let id = generation.request_id;
-        let foo = 1 + 2;
         // Get entry
         // We can `expect` here as the request id should always be in the entries
         let entry = entries

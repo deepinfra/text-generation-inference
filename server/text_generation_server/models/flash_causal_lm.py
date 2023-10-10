@@ -1046,6 +1046,6 @@ class FlashCausalLM(Model):
         batch.max_seqlen = batch.max_seqlen + 1
 
         batch.kv_cache_usage = CACHE_MANAGER.usage()
-        print("kv cache %.2f%%" % (CACHE_MANAGER.usage() * 100))
+        # print("kv cache %.2f%%" % (CACHE_MANAGER.usage() * 100))
 
         return generations, batch

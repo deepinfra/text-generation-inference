@@ -1,5 +1,6 @@
 /// HTTP Server logic
 use crate::health::Health;
+use crate::stats::ServerStats;
 use crate::infer::{InferError, InferResponse, InferStreamResponse};
 use crate::validation::ValidationError;
 use crate::{
@@ -20,7 +21,7 @@ use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use text_generation_client::{ShardInfo, ShardedClient};
 use tokenizers::Tokenizer;
 use tokio::signal;
@@ -584,6 +585,8 @@ pub async fn run(
     );
     let generation_health = Arc::new(AtomicBool::new(false));
     let health_ext = Health::new(client.clone(), generation_health.clone());
+    let server_stats = Arc::new(RwLock::new(ServerStats::new()));
+    let loop_stats = Arc::clone(&server_stats);
     let infer = Infer::new(
         client,
         validation,
@@ -594,6 +597,7 @@ pub async fn run(
         max_concurrent_requests,
         shard_info.requires_padding,
         generation_health,
+        server_stats,
     );
 
     // Duration buckets
@@ -750,6 +754,15 @@ pub async fn run(
             panic!("`text-generation-router` was compiled without the `ngrok` feature");
         }
     } else {
+        // call trigger function every 10 seconds to log stats
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                let ss = loop_stats.read().unwrap();
+                ss.log_stats();
+            }
+        });
+
         // Run server
         axum::Server::bind(&addr)
             .serve(app.into_make_service())
