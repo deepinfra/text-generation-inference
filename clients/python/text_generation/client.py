@@ -66,6 +66,7 @@ class Client:
         best_of: Optional[int] = None,
         repetition_penalty: Optional[float] = None,
         return_full_text: bool = False,
+        return_logits: bool = False,
         seed: Optional[int] = None,
         stop_sequences: Optional[List[str]] = None,
         temperature: Optional[float] = None,
@@ -113,6 +114,8 @@ class Client:
                 Watermarking with [A Watermark for Large Language Models](https://arxiv.org/abs/2301.10226)
             decoder_input_details (`bool`):
                 Return the decoder input token logprobs and ids
+            return_logits (`bool`):
+                Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
 
         Returns:
             Response: generated response
@@ -125,6 +128,7 @@ class Client:
             max_new_tokens=max_new_tokens,
             repetition_penalty=repetition_penalty,
             return_full_text=return_full_text,
+            return_logits=return_logits,
             seed=seed,
             stop=stop_sequences if stop_sequences is not None else [],
             temperature=temperature,
@@ -156,6 +160,7 @@ class Client:
         max_new_tokens: int = 20,
         repetition_penalty: Optional[float] = None,
         return_full_text: bool = False,
+        return_logits: bool = False,
         seed: Optional[int] = None,
         stop_sequences: Optional[List[str]] = None,
         temperature: Optional[float] = None,
@@ -180,6 +185,8 @@ class Client:
                 paper](https://arxiv.org/pdf/1909.05858.pdf) for more details.
             return_full_text (`bool`):
                 Whether to prepend the prompt to the generated text
+            return_logits (`bool`):
+                Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
             seed (`int`):
                 Random sampling seed
             stop_sequences (`List[str]`):
@@ -211,6 +218,7 @@ class Client:
             max_new_tokens=max_new_tokens,
             repetition_penalty=repetition_penalty,
             return_full_text=return_full_text,
+            return_logits=return_logits,
             seed=seed,
             stop=stop_sequences if stop_sequences is not None else [],
             temperature=temperature,
@@ -308,6 +316,7 @@ class AsyncClient:
         best_of: Optional[int] = None,
         repetition_penalty: Optional[float] = None,
         return_full_text: bool = False,
+        return_logits: bool = False,
         seed: Optional[int] = None,
         stop_sequences: Optional[List[str]] = None,
         temperature: Optional[float] = None,
@@ -335,6 +344,8 @@ class AsyncClient:
                 paper](https://arxiv.org/pdf/1909.05858.pdf) for more details.
             return_full_text (`bool`):
                 Whether to prepend the prompt to the generated text
+            return_logits (`bool`):
+                Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
             seed (`int`):
                 Random sampling seed
             stop_sequences (`List[str]`):
@@ -355,6 +366,8 @@ class AsyncClient:
                 Watermarking with [A Watermark for Large Language Models](https://arxiv.org/abs/2301.10226)
             decoder_input_details (`bool`):
                 Return the decoder input token logprobs and ids
+            return_logits (`bool`):
+                Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
 
         Returns:
             Response: generated response
@@ -368,6 +381,7 @@ class AsyncClient:
             max_new_tokens=max_new_tokens,
             repetition_penalty=repetition_penalty,
             return_full_text=return_full_text,
+            return_logits=return_logits,
             seed=seed,
             stop=stop_sequences if stop_sequences is not None else [],
             temperature=temperature,
@@ -396,6 +410,7 @@ class AsyncClient:
         max_new_tokens: int = 20,
         repetition_penalty: Optional[float] = None,
         return_full_text: bool = False,
+        return_logits: bool = False,
         seed: Optional[int] = None,
         stop_sequences: Optional[List[str]] = None,
         temperature: Optional[float] = None,
@@ -420,6 +435,8 @@ class AsyncClient:
                 paper](https://arxiv.org/pdf/1909.05858.pdf) for more details.
             return_full_text (`bool`):
                 Whether to prepend the prompt to the generated text
+            return_logits (`bool`):
+                Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
             seed (`int`):
                 Random sampling seed
             stop_sequences (`List[str]`):
@@ -451,6 +468,7 @@ class AsyncClient:
             max_new_tokens=max_new_tokens,
             repetition_penalty=repetition_penalty,
             return_full_text=return_full_text,
+            return_logits=return_logits,
             seed=seed,
             stop=stop_sequences if stop_sequences is not None else [],
             temperature=temperature,

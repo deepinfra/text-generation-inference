@@ -93,6 +93,10 @@ struct Args {
     /// decoding strategies, for full doc refer to the `text-generation-server`
     #[clap(long, env)]
     do_sample: bool,
+
+    /// Enable logit array generation
+    #[clap(long, env)]
+    return_logits: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -117,6 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         watermark,
         do_sample,
         master_shard_uds_path,
+        return_logits,
     } = args;
 
     let batch_size = batch_size.unwrap_or(vec![1, 2, 4, 8, 16, 32]);
@@ -182,6 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 repetition_penalty,
                 watermark,
                 do_sample,
+                return_logits,
                 sharded_client,
             )
             .await

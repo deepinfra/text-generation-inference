@@ -706,6 +706,7 @@ class Seq2SeqLM(Model):
                     next_token_text,
                     next_token_id_squeezed.item() in self.all_special_ids,
                     generated_text,
+                    None, # logits.detach()[-1], # logits_logprob[:50].detach(),
                 )
 
                 generations.append(generation)

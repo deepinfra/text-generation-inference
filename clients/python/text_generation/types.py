@@ -15,6 +15,8 @@ class Parameters(BaseModel):
     repetition_penalty: Optional[float] = None
     # Whether to prepend the prompt to the generated text
     return_full_text: bool = False
+    # Return a base64-encoded array of IEEE-754 32-bit float probabilities for all possible tokens into `logits`.
+    return_logits: bool = False
     # Stop generating tokens if a member of `stop_sequences` is generated
     stop: List[str] = []
     # Random sampling seed

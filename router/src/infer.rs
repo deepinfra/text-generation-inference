@@ -20,6 +20,8 @@ use tokio::sync::{Notify, OwnedSemaphorePermit, Semaphore, TryAcquireError};
 use tokio::time::Instant;
 use tracing::{info_span, instrument, Instrument, Span};
 
+use base64::{Engine as _, engine::general_purpose};
+
 /// Inference struct
 #[derive(Clone)]
 pub struct Infer {
@@ -477,7 +479,9 @@ fn filter_send_generations(generations: Vec<Generation>, entries: &mut IntMap<u6
             .expect("ID not found in entries. This is a bug.");
 
         // Create and enter a span to link this function back to the entry
-        let _span = info_span!(parent: entry.temp_span.as_ref().expect("batch_span is None. This is a bug."), "send_generation", generation = ?generation).entered();
+        // This may take 15 milliseconds when returning logits.
+        // let _span = info_span!(parent: entry.temp_span.as_ref().expect("batch_span is None. This is a bug."), "send_generation", generation = ?generation).entered();
+
         // Send generation responses back to the infer task
         // If the receive an error from the Flume channel, it means that the client dropped the
         // request and we need to stop generating hence why we unwrap_or(true)
@@ -521,6 +525,7 @@ fn send_responses(
         text: generation.token_text,
         logprob: generation.token_logprob,
         special: generation.token_is_special,
+        logits: if let Some(binfloats) = generation.logit_binary { Some(general_purpose::URL_SAFE.encode(binfloats)) } else { None },
     };
 
     if let Some(generated_text) = generation.generated_text {

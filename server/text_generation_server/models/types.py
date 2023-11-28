@@ -9,6 +9,8 @@ from transformers import PreTrainedTokenizerBase
 from text_generation_server.pb import generate_pb2
 from text_generation_server.pb.generate_pb2 import FinishReason
 
+import numpy as np
+
 
 class Batch(ABC):
     @abstractmethod
@@ -80,8 +82,12 @@ class Generation:
     token_text: str
     token_is_special: bool
     generated_text: Optional[GeneratedText]
+    logit_weights: Optional[np.ndarray]
 
     def to_pb(self) -> generate_pb2.Generation:
+        logit_binary = None
+        if self.logit_weights is not None:
+            logit_binary = self.logit_weights.numpy().tobytes()
         return generate_pb2.Generation(
             request_id=self.request_id,
             prefill_tokens=self.prefill_tokens.to_pb()
@@ -91,7 +97,8 @@ class Generation:
             token_logprob=self.token_logprob,
             token_text=self.token_text,
             token_is_special=self.token_is_special,
-            generated_text=self.generated_text.to_pb()
+            generated_text=(self.generated_text.to_pb())
             if self.generated_text is not None
             else None,
+            logit_binary=logit_binary,
         )

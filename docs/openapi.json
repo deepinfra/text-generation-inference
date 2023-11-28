@@ -524,6 +524,10 @@
             "example": false,
             "nullable": true
           },
+          "return_logits": {
+            "type": "boolean",
+            "default": "false"
+          },
           "seed": {
             "type": "integer",
             "format": "int64",
@@ -835,6 +839,13 @@
           "text": {
             "type": "string",
             "example": "test"
+          },
+          "logits": {
+            "type": "array",
+            "items": {
+              "type": "float"
+            },
+            "nullable": true
           }
         }
       }
