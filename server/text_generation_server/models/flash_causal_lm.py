@@ -933,6 +933,7 @@ class FlashCausalLM(Model):
             batch.next_token_chooser.seeds,
             next_token_ids,
             next_token_logprobs,
+            next_token_logits.type(torch.FloatTensor).detach().cpu(),
         )
 
         # For each member of the batch
@@ -947,6 +948,7 @@ class FlashCausalLM(Model):
             seed,
             next_token_id,
             next_token_logprob,
+            next_token_logit,
         ) in enumerate(iterator):
             # Append next token to all tokens
             all_input_ids.append(next_token_id)
@@ -1017,6 +1019,7 @@ class FlashCausalLM(Model):
                     next_token_text,
                     next_token_id in self.all_special_ids,
                     generated_text,
+                    next_token_logit if request.parameters.return_logits else None,
                 )
 
                 generations.append(generation)

@@ -125,6 +125,9 @@ pub(crate) struct GenerateParameters {
     #[schema(default = "true")]
     pub details: bool,
     #[serde(default)]
+    #[schema(default = "false")]
+    pub return_logits: bool,
+    #[serde(default)]
     #[schema(default = "true")]
     pub decoder_input_details: bool,
     #[serde(default)]
@@ -156,6 +159,7 @@ fn default_parameters() -> GenerateParameters {
         truncate: None,
         watermark: false,
         details: false,
+        return_logits: false,
         decoder_input_details: false,
         seed: None,
     }
@@ -209,6 +213,8 @@ pub struct Token {
     logprob: f32,
     #[schema(example = "false")]
     special: bool,
+    #[schema(nullable = true)]
+    logits: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]

@@ -66,6 +66,8 @@ message NextTokenChooserParameters {
     float repetition_penalty = 7;
     /// token watermarking using "A Watermark for Large Language Models"
     bool watermark = 8;
+    /// True if you want logits returned as a byte array of float32 probabilities
+    bool return_logits = 9;
 }
 
 message StoppingCriteriaParameters {
@@ -156,6 +158,8 @@ message Generation {
     bool token_is_special = 6;
     /// Complete generated text
     optional GeneratedText generated_text = 7;
+    /// Logit weights binary
+    optional bytes logit_binary = 8;
 }
 
 message FilterBatchRequest {
@@ -181,6 +185,8 @@ message PrefillResponse {
     repeated Generation generations = 1;
     /// Next batch (cached)
     optional CachedBatch batch = 2;
+    /// Logit tokens
+    optional string logit_tokens = 3;
 }
 
 message DecodeRequest {

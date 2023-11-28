@@ -31,6 +31,7 @@ pub async fn run(
     repetition_penalty: Option<f32>,
     watermark: bool,
     do_sample: bool,
+    return_logits: bool,
     client: ShardedClient,
 ) -> Result<(), crossterm::ErrorKind> {
     let parameters = NextTokenChooserParameters {
@@ -42,6 +43,7 @@ pub async fn run(
         seed: 0,
         repetition_penalty: repetition_penalty.unwrap_or(1.0),
         watermark,
+        return_logits: return_logits,
     };
 
     // Initialize terminal properties

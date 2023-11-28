@@ -159,6 +159,7 @@ async fn generate(
     if req.0.parameters.return_full_text.unwrap_or(false) {
         add_prompt = Some(req.0.inputs.clone());
     }
+    // let return_logits = req.0.parameters.return_logits;
 
     let details = req.0.parameters.details || req.0.parameters.decoder_input_details;
 

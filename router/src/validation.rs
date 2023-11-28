@@ -247,6 +247,7 @@ impl Validation {
             do_sample,
             seed,
             watermark,
+            return_logits: request.parameters.return_logits,
         };
         let stopping_parameters = StoppingCriteriaParameters {
             max_new_tokens,
