@@ -66,12 +66,15 @@ def attention(
             out,
             cu_seqlens,
             cu_seqlens,
+            None, # seqused_k added in ce3e728
             max_s,
             max_s,
             0.0,
             softmax_scale,
             False,
             True,
+            -1, # window_size[0] added in 083e8f52. -1 means infinite window size
+            -1, # window_size[1] added in 083e8f52. -1 means infinite window size
             False,
             None,
         )
