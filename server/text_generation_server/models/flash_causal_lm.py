@@ -701,10 +701,12 @@ class FlashCausalLM(Model):
         device: torch.device,
         rank: int = 0,
         world_size: int = 1,
+        window_size: tuple[int, int] = (-1, -1),
     ):
         self.num_layers = num_layers
         self.num_kv_heads = num_kv_heads
         self.head_size = head_size
+        self.window_size = window_size
 
         super(FlashCausalLM, self).__init__(
             model=model,

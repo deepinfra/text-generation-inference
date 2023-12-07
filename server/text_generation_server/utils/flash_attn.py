@@ -57,6 +57,7 @@ def attention(
     cu_seqlens,
     max_s,
     softmax_scale,
+    window_size=(-1, -1),
 ):
     if HAS_FLASH_ATTN_V2:
         return flash_attn_2_cuda.varlen_fwd(
@@ -73,8 +74,8 @@ def attention(
             softmax_scale,
             False,
             True,
-            -1, # window_size[0] added in 083e8f52. -1 means infinite window size
-            -1, # window_size[1] added in 083e8f52. -1 means infinite window size
+            window_size[0], # window_size[0] added in 083e8f52. -1 means infinite window size
+            window_size[1], # window_size[1] added in 083e8f52. -1 means infinite window size
             False,
             None,
         )

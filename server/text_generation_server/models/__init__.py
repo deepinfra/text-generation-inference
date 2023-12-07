@@ -48,6 +48,9 @@ FLASH_ATTENTION = True
 try:
     from text_generation_server.models.flash_rw import FlashRWSharded
     from text_generation_server.models.flash_neox import FlashNeoXSharded
+    from text_generation_server.models.flash_mistral import (
+        FlashMistral,
+    )
     from text_generation_server.models.flash_llama import (
         FlashLlama,
     )
@@ -64,6 +67,7 @@ if FLASH_ATTENTION:
     __all__.append(FlashRWSharded)
     __all__.append(FlashSantacoderSharded)
     __all__.append(FlashLlama)
+    __all__.append(FlashMistral)
 
 
 def get_model(
@@ -180,15 +184,24 @@ def get_model(
                 trust_remote_code=trust_remote_code,
             )
 
-    elif model_type == "llama":
+    elif model_type == "llama" or model_type == "mistral":
         if FLASH_ATTENTION:
-            return FlashLlama(
-                model_id,
-                revision,
-                quantize=quantize,
-                dtype=dtype,
-                trust_remote_code=trust_remote_code,
-            )
+            if model_type == "mistral":
+                return FlashMistral(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
+            else:
+                return FlashLlama(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
         elif sharded:
             raise NotImplementedError(FLASH_ATT_ERROR_MESSAGE.format("Sharded Llama"))
         else:
