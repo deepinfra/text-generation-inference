@@ -953,7 +953,7 @@ class MixtralForCausalLM(torch.nn.Module):
 
     def __init__(self, config, weights):
         super().__init__()
-        self.model = MistralModel(config)
+        self.model = MistralModel(config, weights)
         self.vocab_size = config.vocab_size
         self.lm_head = TensorParallelHead.load(
             config,
