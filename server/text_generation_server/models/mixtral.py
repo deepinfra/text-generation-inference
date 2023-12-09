@@ -61,15 +61,15 @@ class FlashMixtral(FlashCausalLM):
         torch.distributed.barrier(group=self.process_group)
 
         print("Loading weights")
-        # filenames = weight_files(model_id, revision=revision, extension=".safetensors")
-        # weights = Weights(filenames, device, dtype, process_group=self.process_group)
-        # if config.quantize == "gptq":
-        #     weights._set_gptq_params(model_id)
+        filenames = weight_files(model_id, revision=revision, extension=".safetensors")
+        weights = Weights(filenames, device, dtype, process_group=self.process_group)
+        if config.quantize == "gptq":
+            weights._set_gptq_params(model_id)
 
-        model = MixtralForCausalLM.from_pretrained(
-            model_id, config=config, low_cpu_mem_usage=True,
-            device_map="auto", trust_remote_code=True)
-        # model = MixtralForCausalLM(config, weights)  # , weights
+        # model = MixtralForCausalLM.from_pretrained(
+        #     model_id, config=config, low_cpu_mem_usage=True,
+        #     device_map="auto", trust_remote_code=True)
+        model = MixtralForCausalLM(config, weights)  # , weights
         print(dir(model))
         print(dir(model.model))
 

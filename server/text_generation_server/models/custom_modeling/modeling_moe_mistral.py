@@ -43,8 +43,9 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 from .configuration_moe_mistral import MixtralConfig
-
-
+from .flash_llama_modeling import FlashLlamaAttention
+from ...utils.layers import TensorParallelEmbedding, TensorParallelColumnLinear, TensorParallelRowLinear, \
+    TensorParallelHead
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -73,12 +74,14 @@ def _get_unpad_data(attention_mask):
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Mistral
 class MistralRMSNorm(nn.Module):
-    def __init__(self, hidden_size, eps=1e-6):
+    def __init__(self, prefix, weights, eps=1e-6):
         """
         MistralRMSNorm is equivalent to T5LayerNorm
         """
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(hidden_size))
+        weight = weights.get_tensor(f"{prefix}.weight")
+        self.weight = nn.Parameter(weight)
+        # self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
     def forward(self, hidden_states):
@@ -166,7 +169,9 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
 class FeedForward(nn.Module):
     def __init__(
         self,
-        config
+        config,
+        prefix,
+        weights
     ):
         """
         Initialize the FeedForward module.
@@ -185,40 +190,69 @@ class FeedForward(nn.Module):
         """
         super().__init__()
 
-        self.w1 = nn.Linear(
-            config.hidden_size, config.intermediate_size, bias=False
+        self.w1 = TensorParallelColumnLinear.load(
+            config,
+            prefix=f"{prefix}.w1",
+            weights=weights,
+            bias=False
         )
-        self.w2 = nn.Linear(
-            config.intermediate_size, config.hidden_size, bias=False
+        self.w2 = TensorParallelRowLinear.load(
+            config,
+            prefix=f"{prefix}.w2",
+            weights=weights,
+            bias=False
         )
-        self.w3 = nn.Linear(
-            config.hidden_size, config.intermediate_size, bias=False
+        self.w3 = TensorParallelColumnLinear.load(
+            config,
+            prefix=f"{prefix}.w3",
+            weights=weights,
+            bias=False
         )
 
+        # self.w1 = nn.Linear(
+        #     config.hidden_size, config.intermediate_size, bias=False
+        # )
+        # self.w2 = nn.Linear(
+        #     config.intermediate_size, config.hidden_size, bias=False
+        # )
+        # self.w3 = nn.Linear(
+        #     config.hidden_size, config.intermediate_size, bias=False
+        # )
+
     def forward(self, x):
-        device = x.device
-        x = x.to(self.w1.weight.device)
-        return self.w2(F.silu(self.w1(x)) * self.w3(x)).to(device)
+        return self.w2(F.silu(self.w1(x)) * self.w3(x))
+        # device = x.device
+        # x = x.to(self.w1.weight.device)
+        # return self.w2(F.silu(self.w1(x)) * self.w3(x)).to(device)
 
 
 class MoE(nn.Module):
     def __init__(
         self,
         config,
+        prefix,
+        weights
     ):
         super().__init__()
         self.config = config
         num_experts = config.num_experts
-        self.experts = nn.ModuleList([FeedForward(config) for i in range(num_experts)])
-        self.gate = nn.Linear(config.hidden_size, num_experts, bias=False)
+        self.experts = nn.ModuleList(
+            [
+                FeedForward(config, prefix=f"{prefix}.{i}", weights=weights)
+                for i in range(num_experts)])
+        # TODO: is this Row or Column?
+        self.gate = TensorParallelRowLinear.load(
+            config, prefix=f"{prefix}.gate", weights=weights, bias=False)
+        # self.gate = nn.Linear(config.hidden_size, num_experts, bias=False)
         self.num_experts_per_token = config.num_experts_per_token
 
     def forward(self, x):
         orig_shape = x.shape
         x = x.view(-1, x.shape[-1])
 
-        scores = self.gate(x).softmax(dim=-1)
+        scores = self.gate(x)
         expert_weights, expert_indices = torch.topk(scores, self.num_experts_per_token, dim=-1)
+        expert_weights = expert_weights.softmax(dim=-1)
         flat_expert_indices = expert_indices.view(-1)
 
         x = x.repeat_interleave(self.num_experts_per_token, dim=0)
@@ -654,17 +688,25 @@ class MistralFlashAttention2(MistralAttention):
 
 
 class MistralDecoderLayer(nn.Module):
-    def __init__(self, config: MixtralConfig, layer_idx: int):
+    def __init__(self, layer_idx: int, config: MixtralConfig, weights):
         super().__init__()
+        prefix = f"model.layers.{layer_idx}"
         self.hidden_size = config.hidden_size
-        self.self_attn = (
-            MistralAttention(config=config, layer_idx=layer_idx)
-            if not getattr(config, "_flash_attn_2_enabled", False)
-            else MistralFlashAttention2(config, layer_idx=layer_idx)
+        self.self_attn = FlashLlamaAttention(
+            prefix=f"{prefix}.self_attn", config=config, weights=weights
         )
-        self.mlp = MoE(config)
-        self.input_layernorm = MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.post_attention_layernorm = MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        # self.self_attn = (
+        #     MistralAttention(config=config, layer_idx=layer_idx)
+        #     if not getattr(config, "_flash_attn_2_enabled", False)
+        #     else MistralFlashAttention2(config, layer_idx=layer_idx)
+        # )
+        self.mlp = MoE(config, prefix=f"{prefix}.mlp.experts", weights=weights)
+        self.input_layernorm = MistralRMSNorm(
+            prefix=f"{prefix}.input_layernorm", weights=weights, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = MistralRMSNorm(
+            prefix=f"{prefix}.post_attention_layernorm",
+            weights=weights,
+            eps=config.rms_norm_eps)
 
     def forward(
         self,
@@ -842,7 +884,7 @@ MISTRAL_INPUTS_DOCSTRING = r"""
     "The bare Mistral Model outputting raw hidden-states without any specific head on top.",
     MISTRAL_START_DOCSTRING,
 )
-class MistralModel(MistralPreTrainedModel):
+class MistralModel(torch.nn.Module):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MistralDecoderLayer`]
 
@@ -850,16 +892,30 @@ class MistralModel(MistralPreTrainedModel):
         config: MixtralConfig
     """
 
-    def __init__(self, config: MixtralConfig):
-        super().__init__(config)
+    def __init__(self, config: MixtralConfig, weights):
+        super().__init__()
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
+        process_group = weights.process_group
+        self.tp_rank = process_group.rank()
+        self.tp_world_size = process_group.size()
 
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        self.layers = nn.ModuleList(
-            [MistralDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+        self.embed_tokens = TensorParallelEmbedding(
+            prefix="model.embed_tokens", weights=weights
         )
-        self.norm = MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        # self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.layers = nn.ModuleList(
+            [
+                MistralDecoderLayer(
+                    layer_idx,
+                    config,
+                    weights
+                )
+                for layer_idx in range(config.num_hidden_layers)]
+        )
+        self.norm = MistralRMSNorm(
+            prefix="model.norm", weights=weights, eps=config.rms_norm_eps)
+        # self.norm = MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
@@ -1016,14 +1072,19 @@ class MistralModel(MistralPreTrainedModel):
         )
 
 
-class MixtralForCausalLM(MistralPreTrainedModel):
+class MixtralForCausalLM(torch.nn.Module):
     _tied_weights_keys = ["lm_head.weight"]
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, weights):
+        super().__init__()
         self.model = MistralModel(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = TensorParallelHead.load(
+            config,
+            prefix="lm_head",
+            weights=weights,
+        )
+        # self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
