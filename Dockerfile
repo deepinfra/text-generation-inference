@@ -189,6 +189,7 @@ RUN pip install einops --no-cache-dir
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         build-essential \
+        git \
         g++ \
         && rm -rf /var/lib/apt/lists/*
 
