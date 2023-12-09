@@ -45,7 +45,7 @@ from transformers.utils import (
 from .configuration_moe_mistral import MixtralConfig
 from .flash_llama_modeling import FlashLlamaAttention
 from ...utils.layers import TensorParallelEmbedding, TensorParallelColumnLinear, TensorParallelRowLinear, \
-    TensorParallelHead
+    TensorParallelHead, FastLinear
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -200,19 +200,19 @@ class FeedForward(nn.Module):
         """
         super().__init__()
 
-        self.w1 = TensorParallelColumnLinear.load(
+        self.w1 = FastLinear.load(
             config,
             prefix=f"{prefix}.w1",
             weights=weights,
             bias=False
         )
-        self.w2 = TensorParallelRowLinear.load(
+        self.w2 = FastLinear.load(
             config,
             prefix=f"{prefix}.w2",
             weights=weights,
             bias=False
         )
-        self.w3 = TensorParallelColumnLinear.load(
+        self.w3 = FastLinear.load(
             config,
             prefix=f"{prefix}.w3",
             weights=weights,
