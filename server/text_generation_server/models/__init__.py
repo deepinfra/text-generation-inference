@@ -18,6 +18,7 @@ from text_generation_server.models.galactica import GalacticaSharded
 from text_generation_server.models.santacoder import SantaCoder
 from text_generation_server.models.t5 import T5Sharded
 from text_generation_server.models.gpt_neox import GPTNeoxSharded
+from text_generation_server.models.mixtral import FlashMixtral
 
 # The flag below controls whether to allow TF32 on matmul. This flag defaults to False
 # in PyTorch 1.12 and later.
@@ -186,7 +187,15 @@ def get_model(
 
     elif model_type == "llama" or model_type == "mistral":
         if FLASH_ATTENTION:
-            if model_type == "mistral":
+            if "mixtral" in model_id:
+                return FlashMixtral(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
+            elif model_type == "mistral":
                 return FlashMistral(
                     model_id,
                     revision,
@@ -194,6 +203,7 @@ def get_model(
                     dtype=dtype,
                     trust_remote_code=trust_remote_code,
                 )
+
             else:
                 return FlashLlama(
                     model_id,
