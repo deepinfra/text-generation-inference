@@ -753,6 +753,7 @@ class FlashCausalLM(Model):
         total_free_memory, _ = torch.cuda.mem_get_info(self.device)
         total_gpu_memory = torch.cuda.get_device_properties(self.device).total_memory
 
+
         free_memory = max(
             0, total_free_memory - (1 - MEMORY_FRACTION) * total_gpu_memory
         )
@@ -767,6 +768,7 @@ class FlashCausalLM(Model):
             + CACHE_MANAGER.num_blocks
         )
 
+        num_blocks = int(num_blocks / 2)
         print(f"Allocating {num_blocks} blocks for the cache")
 
         del CACHE_MANAGER
