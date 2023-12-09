@@ -721,7 +721,8 @@ class MistralDecoderLayer(nn.Module):
         input_lengths,
         max_s,
     ):
-        normed_hidden_states, res = self.input_layernorm(hidden_states, residual)
+        # normed_hidden_states, res = self.input_layernorm(hidden_states, residual)
+        normed_hidden_states, res = self.input_layernorm(hidden_states)
 
         # Self Attention
         attn_output = self.self_attn(
