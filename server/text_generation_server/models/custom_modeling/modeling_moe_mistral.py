@@ -238,11 +238,11 @@ class MoE(nn.Module):
         num_experts = config.num_experts
         self.experts = nn.ModuleList(
             [
-                FeedForward(config, prefix=f"{prefix}.{i}", weights=weights).to(f"cuda:{i//2}")
+                FeedForward(config, prefix=f"{prefix}.mlp.experts.{i}", weights=weights).to(f"cuda:{i//2}")
                 for i in range(num_experts)])
         # TODO: is this Row or Column?
         self.gate = TensorParallelRowLinear.load(
-            config, prefix=f"{prefix}.gate", weights=weights, bias=False)
+            config, prefix=f"{prefix}.mlp.gate", weights=weights, bias=False)
         # self.gate = nn.Linear(config.hidden_size, num_experts, bias=False)
         self.num_experts_per_token = config.num_experts_per_token
 
@@ -700,7 +700,7 @@ class MistralDecoderLayer(nn.Module):
         #     if not getattr(config, "_flash_attn_2_enabled", False)
         #     else MistralFlashAttention2(config, layer_idx=layer_idx)
         # )
-        self.mlp = MoE(config, prefix=f"{prefix}.mlp.experts", weights=weights)
+        self.mlp = MoE(config, prefix=prefix, weights=weights)
         self.input_layernorm = MistralRMSNorm(
             prefix=f"{prefix}.input_layernorm", weights=weights, eps=config.rms_norm_eps)
         self.post_attention_layernorm = MistralRMSNorm(
