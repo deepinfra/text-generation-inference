@@ -70,14 +70,18 @@ class FlashMixtral(FlashCausalLM):
             model_id, config=config, low_cpu_mem_usage=True,
             device_map="auto", trust_remote_code=True)
         # model = MixtralForCausalLM(config, weights)  # , weights
+        print(dir(model))
+        print(dir(model.model))
 
         torch.distributed.barrier(group=self.process_group)
         super(FlashMixtral, self).__init__(
             model=model,
             tokenizer=tokenizer,
             num_layers=len(model.model.layers),
-            num_kv_heads=model.model.num_key_value_heads,
-            head_size=model.model.head_size,
+            num_kv_heads=8,
+            head_size=32,
+            # num_kv_heads=model.model.num_key_value_heads,
+            # head_size=model.model.head_size,
             dtype=dtype,
             device=device,
             rank=rank,
