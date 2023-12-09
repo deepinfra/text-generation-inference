@@ -248,7 +248,7 @@ class MoE(nn.Module):
         num_experts = config.num_experts
         self.experts = nn.ModuleList(
             [
-                FeedForward(config, prefix=f"{prefix}.mlp.experts.{i}", weights=weights).to(f"cuda:{i//2}")
+                FeedForward(config, prefix=f"{prefix}.mlp.experts.{i}", weights=weights).to(f"cuda:{i%2}")
                 for i in range(num_experts)])
         # TODO: is this Row or Column?
         self.gate = TensorParallelRowLinear.load(
