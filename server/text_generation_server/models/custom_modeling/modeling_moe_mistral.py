@@ -84,12 +84,22 @@ class MistralRMSNorm(nn.Module):
         # self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
-    def forward(self, hidden_states):
-        input_dtype = hidden_states.dtype
+    def forward(self, hidden_states, residual=None):
+        if residual is not None:
+            hidden_states += residual
+        residual = hidden_states
+
         hidden_states = hidden_states.to(torch.float32)
         variance = hidden_states.pow(2).mean(-1, keepdim=True)
-        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
-        return self.weight * hidden_states.to(input_dtype)
+        hidden_states = hidden_states * torch.rsqrt(
+            variance + self.variance_epsilon
+        )
+
+        # convert into half-precision if necessary
+        if self.weight.dtype in [torch.float16, torch.bfloat16]:
+            hidden_states = hidden_states.to(self.weight.dtype)
+
+        return self.weight * hidden_states, residual
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Mistral
@@ -721,8 +731,7 @@ class MistralDecoderLayer(nn.Module):
         input_lengths,
         max_s,
     ):
-        # normed_hidden_states, res = self.input_layernorm(hidden_states, residual)
-        normed_hidden_states, res = self.input_layernorm(hidden_states)
+        normed_hidden_states, res = self.input_layernorm(hidden_states, residual)
 
         # Self Attention
         attn_output = self.self_attn(
