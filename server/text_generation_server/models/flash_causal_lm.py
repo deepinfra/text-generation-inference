@@ -757,11 +757,17 @@ class FlashCausalLM(Model):
             0, total_free_memory - (1 - MEMORY_FRACTION) * total_gpu_memory
         )
 
+        print(f"num_kv_heads: {self.num_kv_heads}, head_size: {self.head_size}, BLOCK_SIZE: {BLOCK_SIZE}")
+        print(f"num_layers: {self.num_layers}, dtype_size: {dtype_size}, total_cache_size: {total_cache_size}")
+        print(f"total_free_memory: {total_free_memory}, total_gpu_memory: {total_gpu_memory}, free_memory: {free_memory}")
+
         num_blocks = (
             int(free_memory // total_cache_size)
             # Add batch.blocks as we allocated it above, so it is included in the peak memory.
             + CACHE_MANAGER.num_blocks
         )
+
+        print(f"Allocating {num_blocks} blocks for the cache")
 
         del CACHE_MANAGER
         del batch
@@ -775,6 +781,8 @@ class FlashCausalLM(Model):
             self.dtype,
             self.device,
         )
+
+        print(f"Allocated {CACHE_MANAGER.num_blocks} blocks for the cache")
 
         return int(num_blocks * BLOCK_SIZE)
 
