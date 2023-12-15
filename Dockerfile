@@ -1,5 +1,9 @@
+ARG cargo_chef_image=lukemathwalker/cargo-chef:latest-rust-1.70
+ARG debian_bullseye_image=debian:bullseye-slim
+ARG nvidia_cuda_image=nvidia/cuda:11.8.0-base-ubuntu20.04
+
 # Rust builder
-FROM lukemathwalker/cargo-chef:latest-rust-1.70 AS chef
+FROM $cargo_chef_image AS chef
 WORKDIR /usr/src
 
 ARG CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
@@ -39,7 +43,7 @@ RUN cargo build --release
 
 # Python builder
 # Adapted from: https://github.com/pytorch/pytorch/blob/master/Dockerfile
-FROM debian:bullseye-slim as pytorch-install
+FROM $debian_bullseye_image as pytorch-install
 
 ARG PYTORCH_VERSION=2.0.1
 ARG PYTHON_VERSION=3.9
@@ -142,7 +146,7 @@ COPY server/Makefile-vllm Makefile
 RUN make build-vllm
 
 # Text Generation Inference base image
-FROM nvidia/cuda:11.8.0-base-ubuntu20.04 as base
+FROM $nvidia_cuda_image as base
 
 # Conda env
 ENV PATH=/opt/conda/bin:$PATH \
@@ -183,6 +187,12 @@ COPY --from=vllm-builder /usr/src/vllm/build/lib.linux-x86_64-cpython-39 /opt/co
 # Install flash-attention dependencies
 RUN pip install einops --no-cache-dir
 
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        g++ \
+        && rm -rf /var/lib/apt/lists/*
+
 # Install server
 COPY server/requirements.txt server/requirements.txt
 COPY server/pyproject.toml server/pyproject.toml
@@ -203,11 +213,6 @@ COPY --from=builder /usr/src/target/release/text-generation-benchmark /usr/local
 COPY --from=builder /usr/src/target/release/text-generation-router /usr/local/bin/text-generation-router
 # Install launcher
 COPY --from=builder /usr/src/target/release/text-generation-launcher /usr/local/bin/text-generation-launcher
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        build-essential \
-        g++ \
-        && rm -rf /var/lib/apt/lists/*
 
 # AWS Sagemaker compatbile image
 FROM base as sagemaker

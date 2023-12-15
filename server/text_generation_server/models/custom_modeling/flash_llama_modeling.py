@@ -235,6 +235,7 @@ class FlashLlamaAttention(torch.nn.Module):
         slots,
         input_lengths,
         max_s,
+        window_size=(-1, -1),
     ):
         qkv = self.query_key_value(hidden_states)
         query, kv = qkv.split(
@@ -268,6 +269,7 @@ class FlashLlamaAttention(torch.nn.Module):
                 cu_seqlen_prefill,
                 max_s,
                 self.softmax_scale,
+                window_size=window_size,
             )
         # Decode
         else:

@@ -146,7 +146,7 @@ def download_weights(
 
         for i in range(tries):
             try:
-                logger.info(f"Download file: {filename}")
+                logger.info(f"Download file: {filename} {model_id}")
                 start_time = time.time()
                 local_file = hf_hub_download(
                     filename=filename,

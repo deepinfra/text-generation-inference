@@ -18,6 +18,7 @@ from text_generation_server.models.galactica import GalacticaSharded
 from text_generation_server.models.santacoder import SantaCoder
 from text_generation_server.models.t5 import T5Sharded
 from text_generation_server.models.gpt_neox import GPTNeoxSharded
+from text_generation_server.models.mixtral import FlashMixtral
 
 # The flag below controls whether to allow TF32 on matmul. This flag defaults to False
 # in PyTorch 1.12 and later.
@@ -48,6 +49,9 @@ FLASH_ATTENTION = True
 try:
     from text_generation_server.models.flash_rw import FlashRWSharded
     from text_generation_server.models.flash_neox import FlashNeoXSharded
+    from text_generation_server.models.flash_mistral import (
+        FlashMistral,
+    )
     from text_generation_server.models.flash_llama import (
         FlashLlama,
     )
@@ -64,6 +68,7 @@ if FLASH_ATTENTION:
     __all__.append(FlashRWSharded)
     __all__.append(FlashSantacoderSharded)
     __all__.append(FlashLlama)
+    __all__.append(FlashMistral)
 
 
 def get_model(
@@ -180,15 +185,33 @@ def get_model(
                 trust_remote_code=trust_remote_code,
             )
 
-    elif model_type == "llama":
+    elif model_type == "llama" or model_type == "mistral":
         if FLASH_ATTENTION:
-            return FlashLlama(
-                model_id,
-                revision,
-                quantize=quantize,
-                dtype=dtype,
-                trust_remote_code=trust_remote_code,
-            )
+            if "mixtral" in model_id:
+                return FlashMixtral(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
+            elif model_type == "mistral":
+                return FlashMistral(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
+
+            else:
+                return FlashLlama(
+                    model_id,
+                    revision,
+                    quantize=quantize,
+                    dtype=dtype,
+                    trust_remote_code=trust_remote_code,
+                )
         elif sharded:
             raise NotImplementedError(FLASH_ATT_ERROR_MESSAGE.format("Sharded Llama"))
         else:

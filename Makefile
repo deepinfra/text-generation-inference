@@ -42,6 +42,15 @@ python-client-tests:
 
 python-tests: python-server-tests python-client-tests
 
+gpt-neo-125m:
+	text-generation-launcher --model-id EleutherAI/gpt-neo-125m --port 8080
+
+opt1b:
+	text-generation-launcher --model-id facebook/opt-1.3b --port 8080
+
+llama-2-7b:
+	text-generation-launcher --model-id meta-llama/Llama-2-7b-chat-hf --port 8080 --quantize=bitsandbytes
+
 run-falcon-7b-instruct:
 	text-generation-launcher --model-id tiiuae/falcon-7b-instruct --port 8080
 

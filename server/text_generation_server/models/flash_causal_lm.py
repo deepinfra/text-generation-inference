@@ -110,6 +110,11 @@ class CacheManager:
             # Reset mask
             self.free_block_mask[block_indices] = 1
 
+    # return how much of the cache is used between 0 and 1
+    def usage(self) -> float:
+        free_block_indices = self.free_block_mask.nonzero()
+        return (self.num_blocks - len(free_block_indices)) / self.num_blocks
+
 
 @dataclass
 class FlashCausalLMBatch(Batch):
@@ -171,12 +176,16 @@ class FlashCausalLMBatch(Batch):
     # Maximum number of blocks
     max_blocks: int
 
+    #kv cache usage
+    kv_cache_usage: float = 0
+
     def to_pb(self) -> generate_pb2.CachedBatch:
         return generate_pb2.CachedBatch(
             id=self.batch_id,
             request_ids=[r.id for r in self.requests],
             size=len(self),
             max_tokens=self.blocks * BLOCK_SIZE,
+            kv_cache_usage=self.kv_cache_usage
         )
 
     @classmethod
@@ -692,10 +701,12 @@ class FlashCausalLM(Model):
         device: torch.device,
         rank: int = 0,
         world_size: int = 1,
+        window_size: tuple[int, int] = (-1, -1),
     ):
         self.num_layers = num_layers
         self.num_kv_heads = num_kv_heads
         self.head_size = head_size
+        self.window_size = window_size
 
         super(FlashCausalLM, self).__init__(
             model=model,
@@ -742,15 +753,23 @@ class FlashCausalLM(Model):
         total_free_memory, _ = torch.cuda.mem_get_info(self.device)
         total_gpu_memory = torch.cuda.get_device_properties(self.device).total_memory
 
+
         free_memory = max(
             0, total_free_memory - (1 - MEMORY_FRACTION) * total_gpu_memory
         )
+
+        print(f"num_kv_heads: {self.num_kv_heads}, head_size: {self.head_size}, BLOCK_SIZE: {BLOCK_SIZE}")
+        print(f"num_layers: {self.num_layers}, dtype_size: {dtype_size}, total_cache_size: {total_cache_size}")
+        print(f"total_free_memory: {total_free_memory}, total_gpu_memory: {total_gpu_memory}, free_memory: {free_memory}")
 
         num_blocks = (
             int(free_memory // total_cache_size)
             # Add batch.blocks as we allocated it above, so it is included in the peak memory.
             + CACHE_MANAGER.num_blocks
         )
+
+        num_blocks = int(num_blocks / 2)
+        print(f"Allocating {num_blocks} blocks for the cache")
 
         del CACHE_MANAGER
         del batch
@@ -764,6 +783,8 @@ class FlashCausalLM(Model):
             self.dtype,
             self.device,
         )
+
+        print(f"Allocated {CACHE_MANAGER.num_blocks} blocks for the cache")
 
         return int(num_blocks * BLOCK_SIZE)
 
@@ -1036,5 +1057,8 @@ class FlashCausalLM(Model):
         batch.prefill_head_indices = None
         batch.prefill_next_token_indices = None
         batch.max_seqlen = batch.max_seqlen + 1
+
+        batch.kv_cache_usage = CACHE_MANAGER.usage()
+        # print("kv cache %.2f%%" % (CACHE_MANAGER.usage() * 100))
 
         return generations, batch
