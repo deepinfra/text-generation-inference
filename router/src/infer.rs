@@ -262,6 +262,7 @@ async fn batching_task(
         // Wait for a notification from the Infer struct
         shared.batching_task.notified().await;
 
+        let mut start_time = Instant::now();
         // Get the next batch from the queue
         // This batch might be smaller than the maximum batch size if there are not enough requests
         // waiting in the queue
@@ -273,6 +274,9 @@ async fn batching_task(
                 .instrument(span)
                 .await;
             let mut waiting_tokens = 1;
+            metrics::gauge!("tgi_initial_prefill_latency", start_time.elapsed());
+            start_time = Instant::now();
+
 
             // We loop until we do not receive any cached batch from the inference server (== until
             // all requests have met their stopping criteria)
@@ -331,6 +335,8 @@ async fn batching_task(
                         prefill(&mut client, new_batch, &mut new_entries, &generation_health)
                             .instrument(span)
                             .await;
+                    metrics::gauge!("tgi_inner_prefill_latency", start_time.elapsed());
+                    start_time = Instant::now();
                     // Reset waiting counter
                     waiting_tokens = 1;
                     // Extend current batch with the new batch
@@ -358,6 +364,8 @@ async fn batching_task(
                     .instrument(next_batch_span)
                     .await;
                 waiting_tokens += 1;
+                metrics::gauge!("tgi_decode_latency", start_time.elapsed());
+                start_time = Instant::now()
             }
             metrics::gauge!("tgi_batch_current_size", 0.0);
             metrics::gauge!("tgi_batch_current_max_tokens", 0.0);
